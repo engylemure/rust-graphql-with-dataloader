@@ -4,10 +4,10 @@ use crate::graphql::Context;
 use crate::graphql::utils::generate_uuid_from_str;
 use chrono::*;
 use uuid::Uuid;
-use crate::models::user::UserModel;
+use crate::models::user::User;
 
 #[juniper::graphql_object(description = "A user", name = "User", Context = Context)]
-impl UserModel {
+impl User {
     fn id(&self) -> i32 {
         self.id
     }
@@ -29,7 +29,7 @@ impl UserModel {
 /// decrypted token JWT and return into login
 pub struct Token {
     pub bearer: Option<String>,
-    pub user: UserModel,
+    pub user: User,
 }
 
 #[juniper::graphql_object(description = "The token object with user information", Context = Context)]
@@ -37,7 +37,7 @@ impl Token {
     fn bearer(&self) -> Option<String> {
         Some(self.bearer.as_ref().expect("").to_string())
     }
-    fn user(&self) -> &UserModel {
+    fn user(&self) -> &User {
         &self.user
     }
 }

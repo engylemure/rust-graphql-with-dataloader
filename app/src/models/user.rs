@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::graphql::utils::generate_uuid_from_str;
 
 #[derive(Queryable, Clone)]
-pub struct UserModel {
+pub struct User {
     pub id: i32,
     pub hash: Vec<u8>,
     pub uuid: String,
@@ -67,8 +67,8 @@ impl Default for SlimUser {
     }
 }
 
-impl From<UserModel> for SlimUser {
-    fn from(user: UserModel) -> Self {
+impl From<User> for SlimUser {
+    fn from(user: User) -> Self {
         SlimUser {
             email: Some(user.email),
             uuid: generate_uuid_from_str(user.uuid.as_str())

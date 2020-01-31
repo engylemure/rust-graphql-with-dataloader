@@ -7,7 +7,7 @@ use crate::utils::jwt::create_token;
 use diesel::prelude::*;
 use validator::{Validate};
 use crate::utils::identity::make_hash;
-use crate::models::{user::{NewUser, UserModel}};
+use crate::models::{user::{NewUser, User}};
 use crate::graphql::input::user::*;
 use crate::graphql::models::user::Token;
 
@@ -28,7 +28,7 @@ pub fn register(context: &Context, input: RegisterInput) -> RegisterResult {
                 if user_result.is_err() {
                     return Err(ServiceError::from(user_result.err().unwrap()));
                 }
-                match users.order(id.desc()).first::<UserModel>(conn) {
+                match users.order(id.desc()).first::<User>(conn) {
                     Ok(user) => match create_token(user.email.as_str(), generate_uuid_from_str(&user.uuid).unwrap()) {
                         Ok(token) => Ok(Token {
                             bearer: Some(token),
@@ -51,7 +51,7 @@ pub fn login(context: &Context, input: LoginInput) -> LoginResult {
     let conn: &MysqlConnection = &context.db.lock().unwrap();
     let mut items = users
         .filter(email.eq(&input.email))
-        .load::<UserModel>(conn)?;
+        .load::<User>(conn)?;
     if let Some(user) = items.pop() {
         if make_hash(&input.password, &user.salt) == user.hash {
             return match generate_uuid_from_str(&user.uuid) {
