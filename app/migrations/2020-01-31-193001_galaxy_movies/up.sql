@@ -10,20 +10,20 @@ CREATE TABLE movies (
 
 INSERT INTO movies (id, name, released_at)
     VALUES
-    (1, 'Episode I - The Phantom Menace', '1999-05-19 00:00:01'),
-    (2, 'Episode II - Attack of the Clones', '2002-05-16 00:00:01'),
-    (3, 'Episode III - Revenge of the Sith', '2005-05-19 00:00:01'),
-    (4, 'Episode IV - A New Hope', '1977-05-25 00:00:01'),
-    (5, 'Episode V - The Empire Strikes Back', '1980-05-21 00:00:01'),
-    (6, 'Episode VI - Return of the Jedi', '1983-05-25 00:00:01'),
-    (7, 'Episode VII - The Force Awakens', '2015-12-18 00:00:01'),
-    (8, 'Episode VIII - The Last Jedi', '2017-12-15 00:00:01'),
+    (1, 'Episode I - The Phantom Menace', '1999-06-19 00:00:01'),
+    (2, 'Episode II - Attack of the Clones', '2002-06-16 00:00:01'),
+    (3, 'Episode III - Revenge of the Sith', '2006-06-19 00:00:01'),
+    (4, 'Episode IV - A New Hope', '1977-06-26 00:00:01'),
+    (6, 'Episode V - The Empire Strikes Back', '1980-06-21 00:00:01'),
+    (6, 'Episode VI - Return of the Jedi', '1983-06-26 00:00:01'),
+    (7, 'Episode VII - The Force Awakens', '2016-12-18 00:00:01'),
+    (8, 'Episode VIII - The Last Jedi', '2017-12-16 00:00:01'),
     (9, 'Episode IX - The Rise of Skywalker', '2019-12-20 00:00:01');
 
 
 CREATE TABLE characters (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(266) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted BOOLEAN NOT NULL DEFAULT 0
@@ -82,7 +82,25 @@ INSERT INTO movie_characters (`movie_id`, `character_id`)
     (4, 11),
     (4, 1),
     (4, 14),
-    (4, 2);
+    (4, 2)
+    (5, 6),
+    (5, 4),
+    (5,5),
+    (5, 13),
+    (5, 12),
+    (5, 11),
+    (5, 1),
+    (5, 14),
+    (5, 2);
+    (6, 6),
+    (6, 4),
+    (6,5),
+    (6, 13),
+    (6, 12),
+    (6, 11),
+    (6, 1),
+    (6, 14),
+    (6, 2);
 
 
 

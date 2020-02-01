@@ -1,14 +1,28 @@
-use std::sync::{Arc, Mutex};
-use crate::db::MysqlPooledConnection;
+
+
 use dataloader::{BatchFn, BatchFuture};
 use crate::models::user::User;
 use diesel::prelude::*;
 use std::collections::HashMap;
 use futures::{future, FutureExt as _FE};
+use crate::graphql::SharedMysqlPoolConnection;
+use crate::graphql::data_loader::CachedDataLoader;
+
+pub type UserByIdDataLoader = CachedDataLoader<i32, Option<User>, UserDataLoaderBatchById>;
 
 pub struct UserDataLoaderBatchById {
-    pub db: Arc<Mutex<MysqlPooledConnection>>
+    pub db: SharedMysqlPoolConnection
 }
+
+impl UserDataLoaderBatchById {
+    pub fn new(db: SharedMysqlPoolConnection) -> Self {
+        Self {
+            db
+        }
+    }
+}
+
+
 
 impl BatchFn<i32, Option<User>> for UserDataLoaderBatchById {
     type Error = ();

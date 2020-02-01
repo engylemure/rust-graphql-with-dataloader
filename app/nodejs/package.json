@@ -1,0 +1,29 @@
+{
+  "name": "core-api",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "migrate:create": "knex --knexfile knex/config.js migrate:make",
+    "migrate:run": "knex --knexfile knex/config.js migrate:latest",
+    "seed:create": "knex --knexfile knex/config.js seed:make",
+    "seed:run": "knex --knexfile knex/config.js seed:run",
+    "test": "jest"
+  },
+  "dependencies": {
+    "dataloader": "^1.4.0",
+    "express": "^4.17.1",
+    "express-graphql": "^0.8.0",
+    "graphql": "^14.3.1",
+    "graphql-tools": "^4.0.4",
+    "jest": "^24.8.0",
+    "knex": "^0.17.3",
+    "mysql": "^2.18.1",
+    "mysql2": "^2.1.0",
+    "ramda": "^0.26.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.1",
+    "prettier": "^1.17.1"
+  }
+}

@@ -50,24 +50,24 @@ pub async fn graphql_playground(_req: HttpRequest) -> Result<HttpResponse, Error
         .body(html))
 }
 
+#[derive(Deserialize, Clone, Serialize, PartialEq, Debug)]
+struct DataWithQuery {
+    query: String
+}
+
 async fn graphql(
     st: web::Data<Arc<Schema>>,
     data: web::Json<GraphQLRequest>,
     user: LoggedUser,
-    pool: web::Data<MysqlPool>,
+    pool: web::Data<MysqlPool>
 ) -> Result<HttpResponse, Error> {
+//    println!("{}", data_with_query.query);
     let graphql_response = {
         let mysql_pool = pool.get().map_err(|e| serde_json::Error::custom(e))?;
         let ctx = create_context(user.email, mysql_pool);
         let res = data.execute_async(&st, &ctx).await;
         serde_json::to_string(&res)
     }?;
-//    let graphql_response = web::block( move || {
-//        let mysql_pool = pool.get().map_err(|e| serde_json::Error::custom(e))?;
-//        let ctx = create_context(user.email, mysql_pool);
-//        let res = data.execute_async(&st, &ctx);
-//        Ok::<_, serde_json::error::Error>(serde_json::to_string(&res)?)
-//    }).await?;
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(graphql_response))

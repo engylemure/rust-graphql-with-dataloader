@@ -2,7 +2,7 @@ extern crate dotenv;
 
 use crate::graphql::Context;
 use chrono::*;
-use uuid::Uuid;
+
 use crate::models::character::Character;
 use crate::models::movie::Movie;
 
@@ -19,18 +19,10 @@ impl Character {
     fn deleted(&self) -> bool {
         self.deleted
     }
-    fn movies(&self, context: &Context) -> Option<Vec<Movie>> {
+    async fn movies(&self, context: &Context) -> Option<Vec<Movie>> {
         match context.movie_ids_data_loader_by_character_id.load(self.id).await {
             Ok(movie_ids) => match context.movie_data_loader_by_id.load_many(movie_ids).await {
-                Ok(movies_result) => {
-                    let mut movies: Vec<Movie> = Vec::new();
-                    for movie_result in movies_result {
-                        if let Some(movie) = movie_result {
-                            movies.push(movie.clone())
-                        }
-                    };
-                    Some(movies)
-                },
+                Ok(movies_result) => Some(movies_result.into_iter().flatten().collect()),
                 Err(_) => None
             },
             Err(_) => None

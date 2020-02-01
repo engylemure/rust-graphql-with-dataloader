@@ -3,7 +3,7 @@ pub mod models;
 pub mod mutation;
 pub mod query;
 pub mod input;
-pub mod dataloader_batchers;
+pub mod data_loader;
 use crate::db::MysqlPooledConnection;
 use std::sync::{Arc, Mutex};
 //use std::error::Error;
@@ -16,30 +16,27 @@ use crate::graphql::mutation::user::*;
 use crate::graphql::models::user::*;
 use crate::graphql::query::user::*;
 use crate::graphql::input::user::*;
-use dataloader::{Loader, cached::Loader as CachedLoader, cached};
-use crate::graphql::dataloader_batchers::user::UserDataLoaderBatchById;
-use std::collections::BTreeMap;
+use dataloader::{Loader};
+use crate::graphql::data_loader::user::{UserDataLoaderBatchById, UserByIdDataLoader};
+
 use crate::graphql::query::movie::movies;
 use crate::graphql::query::character::characters;
 use crate::models::character::Character;
-use crate::graphql::dataloader_batchers::movie::MovieDataLoaderBatchById;
-use crate::graphql::dataloader_batchers::character::CharacterDataLoaderBatchById;
-use crate::graphql::dataloader_batchers::movie_character::{MovieIdsDataLoaderBatchByCharacterId, CharacterIdsDataLoaderBatchByMovieId};
+use crate::graphql::data_loader::movie::{MovieDataLoaderBatchById, MovieByIdDataLoader};
+use crate::graphql::data_loader::character::{CharacterDataLoaderBatchById, CharacterByIdDataLoader};
+use crate::graphql::data_loader::movie_character::{MovieIdsDataLoaderBatchByCharacterId, CharacterIdsDataLoaderBatchByMovieId, MovieIdsByCharacterIdDataLoader, CharacterIdsByMovieIdDataLoader};
 
-
-type DataLoader<K, V, B> = Loader<K, V, (), B>;
-type CachedDataLoader<K, V, B> = CachedLoader<K, V, (), B, Cache<K, V, B>>;
-type Cache<K, V, F> = BTreeMap<K, cached::Item<K, V, (), F>>;
+type SharedMysqlPoolConnection = Arc<Mutex<MysqlPooledConnection>>;
 
 #[derive(Clone)]
 pub struct Context {
-    pub db: Arc<Mutex<MysqlPooledConnection>>,
+    pub db: SharedMysqlPoolConnection,
     pub user: Option<User>,
-    pub user_data_loader_by_id: CachedDataLoader<i32, Option<User>, UserDataLoaderBatchById>,
-    pub movie_data_loader_by_id: CachedDataLoader<i32, Option<Movie>, MovieDataLoaderBatchById>,
-    pub character_data_loader_by_id: CachedDataLoader<i32, Option<Character>, CharacterDataLoaderBatchById>,
-    pub movie_ids_data_loader_by_character_id: CachedDataLoader<i32, Vec<i32>, MovieIdsDataLoaderBatchByCharacterId>,
-    pub character_ids_data_loader_by_movie_id: CachedDataLoader<i32, Vec<i32>, CharacterIdsDataLoaderBatchByMovieId>
+    pub user_data_loader_by_id: UserByIdDataLoader,
+    pub movie_data_loader_by_id: MovieByIdDataLoader,
+    pub character_data_loader_by_id: CharacterByIdDataLoader,
+    pub movie_ids_data_loader_by_character_id: MovieIdsByCharacterIdDataLoader,
+    pub character_ids_data_loader_by_movie_id: CharacterIdsByMovieIdDataLoader
 }
 
 impl juniper::Context for Context {}
@@ -78,11 +75,11 @@ pub fn create_schema() -> Schema {
 pub fn create_context(user_email: Option<String>, mysql_pool: MysqlPooledConnection) -> Context {
     let db = Arc::new(Mutex::new(mysql_pool));
     Context {
-        user_data_loader_by_id: Loader::new(UserDataLoaderBatchById { db: Arc::clone(&db)}).cached(),
-        movie_data_loader_by_id: Loader::new(MovieDataLoaderBatchById{ db: Arc::clone(&deb)}).cached(),
-        character_data_loader_by_id: Loader::new(CharacterDataLoaderBatchById { db: Arc::clone(&db)}).cached(),
-        movie_ids_data_loader_by_character_id: Loader::new(MovieIdsDataLoaderBatchByCharacterId { db: Arc::clone(&db)}).cached(),
-        character_ids_data_loader_by_movie_id: Loader::new(CharacterIdsDataLoaderBatchByMovieId { db: Arc::clone(&db)}).cached(),
+        user_data_loader_by_id: Loader::new(UserDataLoaderBatchById::new(Arc::clone(&db))).cached(),
+        movie_data_loader_by_id: Loader::new(MovieDataLoaderBatchById::new(Arc::clone(&db))).cached(),
+        character_data_loader_by_id: Loader::new(CharacterDataLoaderBatchById::new(Arc::clone(&db))).cached(),
+        movie_ids_data_loader_by_character_id: Loader::new(MovieIdsDataLoaderBatchByCharacterId::new(Arc::clone(&db))).cached(),
+        character_ids_data_loader_by_movie_id: Loader::new(CharacterIdsDataLoaderBatchByMovieId::new(Arc::clone(&db))).cached(),
         user: find_user(user_email, Arc::clone(&db)),
         db,
     }

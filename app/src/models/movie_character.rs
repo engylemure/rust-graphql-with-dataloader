@@ -4,8 +4,8 @@ extern crate dotenv;
 use crate::schema::movie_characters;
 use crate::models::movie::Movie;
 use crate::models::character::Character;
-use crate::utils::identity::{make_hash, make_salt};
-use chrono::*;
+
+
 
 #[derive(Identifiable, Queryable, Associations)]
 #[table_name="movie_characters"]

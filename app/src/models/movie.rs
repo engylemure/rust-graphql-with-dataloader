@@ -2,7 +2,7 @@ extern crate dotenv;
 
 //use diesel::prelude::*;
 use crate::schema::movies;
-use crate::utils::identity::{make_hash, make_salt};
+
 use chrono::*;
 
 #[derive(Identifiable, Queryable, PartialEq, Debug, Associations, Clone)]

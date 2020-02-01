@@ -4,13 +4,23 @@ services:
     build: .
     network_mode: bridge
     env_file: ./env
-    links: 
+    links:
       - db
     volumes:
       - ./app/:/usr/src/app
-    ports: 
+    ports:
       - 8080:80
       - 8443:443
+  api2:
+    build:
+      context: ./
+      dockerfile: teste.Dockerfile
+    network_mode: bridge
+    env_file: ./env
+    links:
+      - db
+    volumes:
+      - ./app/:/usr/src/app
   db:
     image: mysql:5.7.22
     network_mode: bridge
