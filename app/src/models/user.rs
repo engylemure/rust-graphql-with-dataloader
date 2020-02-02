@@ -6,6 +6,9 @@ use crate::utils::identity::{make_hash, make_salt};
 use chrono::*;
 use uuid::Uuid;
 use crate::graphql::utils::generate_uuid_from_str;
+use diesel::MysqlConnection;
+use diesel::prelude::*;
+use diesel::result::Error;
 
 #[derive(Queryable, Clone)]
 pub struct User {
@@ -17,6 +20,15 @@ pub struct User {
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub deleted: bool,
+}
+
+impl User {
+    pub fn by_email(email_to_search: &String, conn: &MysqlConnection) -> Option<User> {
+        use crate::schema::users::dsl::*;
+        users
+            .filter(email.eq(email_to_search))
+            .first::<User>(conn).ok()
+    }
 }
 
 #[derive(Insertable)]
@@ -48,6 +60,17 @@ impl<'a> NewUser<'a> {
             hash: Some(hash.to_vec()),
             email: Some(&email),
             ..Default::default()
+        }
+    }
+
+    pub fn save(&self, conn: &MysqlConnection) -> Result<User, Error> {
+        use crate::schema::users::dsl::*;
+        let result = diesel::insert_into(users)
+            .values(self)
+            .execute(conn);
+        match result {
+            Ok(_) => users.order(id.desc()).first::<User>(conn),
+            Err(error) => Err(error)
         }
     }
 }

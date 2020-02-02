@@ -23,7 +23,8 @@ impl Movie {
         self.deleted
     }
     async fn characters(&self, context: &Context) -> Option<Vec<Character>> {
-        match context.character_ids_data_loader_by_movie_id.load(self.id).await {
+        let character_ids = context.character_ids_data_loader_by_movie_id.load(self.id).await;
+        match  character_ids {
             Ok(characters_ids) => match context.character_data_loader_by_id.load_many(characters_ids).await {
                 Ok(characters_result) => Some(characters_result.into_iter().flatten().collect()),
                 Err(_) => None

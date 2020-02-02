@@ -7,7 +7,7 @@ use crate::models::character::Character;
 
 
 
-#[derive(Identifiable, Queryable, Associations)]
+#[derive(Identifiable, Queryable, Associations, Debug)]
 #[table_name="movie_characters"]
 #[belongs_to(Movie)]
 #[belongs_to(Character)]

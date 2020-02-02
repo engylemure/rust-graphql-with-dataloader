@@ -25,6 +25,7 @@ use crate::models::character::Character;
 use crate::graphql::data_loader::movie::{MovieDataLoaderBatchById, MovieByIdDataLoader};
 use crate::graphql::data_loader::character::{CharacterDataLoaderBatchById, CharacterByIdDataLoader};
 use crate::graphql::data_loader::movie_character::{MovieIdsDataLoaderBatchByCharacterId, CharacterIdsDataLoaderBatchByMovieId, MovieIdsByCharacterIdDataLoader, CharacterIdsByMovieIdDataLoader};
+use crate::graphql::input::movie::MovieFilter;
 
 type SharedMysqlPoolConnection = Arc<Mutex<MysqlPooledConnection>>;
 
@@ -48,7 +49,7 @@ impl QueryRoot {
     pub fn users(context: &Context) -> Result<Vec<User>, ServiceError> {
         users(context)
     }
-    pub fn movies(context: &Context) -> Result<Vec<Movie>, ServiceError> { movies(context) }
+    pub fn movies(context: &Context, filter: Option<MovieFilter>) -> Result<Vec<Movie>, ServiceError> { movies(context, filter) }
     pub fn characters(context: &Context) -> Result<Vec<Character>, ServiceError> { characters(context) }
     /// Get the authenticated User
     pub fn me(context: &Context) -> Result<User, ServiceError> { me(context) }

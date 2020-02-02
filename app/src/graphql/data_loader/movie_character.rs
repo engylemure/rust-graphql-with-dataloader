@@ -77,7 +77,7 @@ impl BatchFn<i32, Vec<i32>> for CharacterIdsDataLoaderBatchByMovieId {
         use crate::schema::movie_characters::dsl::*;
         println!("character_ids_by_movie_id_batch keys: {:?}", keys);
         let conn: &MysqlConnection = &self.db.lock().unwrap();
-        let movie_characters_data: Vec<MovieCharacter> = match movie_characters.filter(character_id.eq_any(keys))
+        let movie_characters_data: Vec<MovieCharacter> = match movie_characters.filter(movie_id.eq_any(keys))
             .load::<MovieCharacter>(conn) {
             Ok(r) => r,
             Err(_e) => Vec::new()

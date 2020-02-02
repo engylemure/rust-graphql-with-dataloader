@@ -16,19 +16,12 @@ type RegisterResult = Result<Token, ServiceError>;
 type LoginResult = Result<Token, ServiceError>;
 
 pub fn register(context: &Context, input: RegisterInput) -> RegisterResult {
-    use crate::schema::users::dsl::*;
     match input.validate() {
         Ok (_) => {
             let conn: &MysqlConnection = &context.db.lock().unwrap();
             conn.transaction::<_, ServiceError, _>(|| {
                 let new_user = NewUser::new(&input.email, &input.password);
-                let user_result = diesel::insert_into(users)
-                    .values(&new_user)
-                    .execute(conn);
-                if user_result.is_err() {
-                    return Err(ServiceError::from(user_result.err().unwrap()));
-                }
-                match users.order(id.desc()).first::<User>(conn) {
+                match new_user.save(conn) {
                     Ok(user) => match create_token(user.email.as_str(), generate_uuid_from_str(&user.uuid).unwrap()) {
                         Ok(token) => Ok(Token {
                             bearer: Some(token),
@@ -36,7 +29,7 @@ pub fn register(context: &Context, input: RegisterInput) -> RegisterResult {
                         }),
                         Err(_e) => Err(ServiceError::InternalServerError)
                     },
-                    Err(e) => Err(e.into()),
+                    Err(e) => Err(e.into())
                 }
             })
         },
@@ -47,12 +40,8 @@ pub fn register(context: &Context, input: RegisterInput) -> RegisterResult {
 }
 
 pub fn login(context: &Context, input: LoginInput) -> LoginResult {
-    use crate::schema::users::dsl::*;
     let conn: &MysqlConnection = &context.db.lock().unwrap();
-    let mut items = users
-        .filter(email.eq(&input.email))
-        .load::<User>(conn)?;
-    if let Some(user) = items.pop() {
+    if let Some(user) = User::by_email(&input.email, conn) {
         if make_hash(&input.password, &user.salt) == user.hash {
             return match generate_uuid_from_str(&user.uuid) {
                 Some(user_uuid) => match create_token(input.email.as_str(), user_uuid) {

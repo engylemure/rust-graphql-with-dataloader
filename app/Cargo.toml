@@ -19,7 +19,7 @@ serde_derive = "1.0.101"
 diesel = { version = "1.4.3", features = ["mysql", "r2d2", "chrono", "uuidv07",]}
 diesel-derive-enum = { version = "0.4", features = ["mysql"] }
 dotenv = "0.15.0"
-uuid = { version = "0.7", features = ["serde", "v4"]}
+uuid = { version = "0.8", features = ["serde", "v4"] }
 jsonwebtoken = "7.0.1"
 chrono = { version = "0.4.9", features = ["serde"] }
 rand = "0.7.2"
@@ -32,5 +32,5 @@ validator_derive = "0.10"
 # The Future is NOW!!!!!
 dataloader = "0.6.0"
 futures = "0.3"
-juniper_codegen = { git = "https://github.com/graphql-rust/juniper", branch = "async-await", features = ["async"] }
-juniper = { git = "https://github.com/graphql-rust/juniper", branch = "async-await", features = ["async"] }
+juniper_codegen = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = ["async"] }
+juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = ["async"] }
