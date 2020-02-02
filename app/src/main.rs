@@ -36,8 +36,8 @@ use crate::handlers::LoggedUser;
 use std::env;
 use actix_web::web::BytesMut;
 use std::fmt::Debug;
-use graphql_depth_limit::{ValidateQueryDepth, DepthLimitError};
-use juniper::{IntoFieldError};
+use graphql_depth_limit::{QueryDepthAnalyzer, DepthLimitError};
+use juniper::IntoFieldError;
 use crate::errors::ServiceError;
 
 const SERVER_URL: &str = "http://172.17.0.3:80";
@@ -76,6 +76,27 @@ async fn get_data(mut payload: web::Payload) -> Result<BytesMut, Error> {
     Ok(body)
 }
 
+fn analyze_query_errors(query: &str) -> Option<Result<HttpResponse, Error>> {
+    let depth_limit_analyzer = QueryDepthAnalyzer::new(query, vec![], |_a, _b| true);
+    if let Ok(depth_limit_analyzer) = depth_limit_analyzer {
+        match depth_limit_analyzer.verify(7) {
+            Ok(_depth) => {}
+            Err(err) => {
+                if let DepthLimitError::Exceed(exceed_err) = err {
+                    let res = GraphQLResponse::error(ServiceError::MaxDepthLimit(exceed_err).into_field_error());
+                    let graphql_response = serde_json::to_string(&res);
+                    if let Ok(graphql_response) = graphql_response {
+                        return Some(Ok(HttpResponse::Ok()
+                            .content_type("application/json")
+                            .body(graphql_response)))
+                    }
+                }
+            }
+        };
+    }
+    return None
+}
+
 async fn graphql(
     st: web::Data<Arc<Schema>>,
     user: LoggedUser,
@@ -86,20 +107,9 @@ async fn graphql(
     let body = get_data(payload).await?;
     let data = serde_json::from_slice::<GraphQLRequest>(&body)?;
     let data_with_query = serde_json::from_slice::<DataWithQuery>(&body)?;
-    let validator_depth_limit = ValidateQueryDepth::new(&data_with_query.query, vec![], |_a, _b| true);
-    if let Ok(validator_depth_limit) = validator_depth_limit {
-        match validator_depth_limit.verify(7) {
-            Ok(_depth) => {},
-            Err(err) => {
-                if let DepthLimitError::Exceed(exceed_err) = err {
-                    let res = GraphQLResponse::error(ServiceError::MaxDepthLimit(exceed_err).into_field_error());
-                    let graphql_response = serde_json::to_string(&res)?;
-                    return Ok(HttpResponse::Ok()
-                        .content_type("application/json")
-                        .body(graphql_response))
-                }
-            }
-        };
+    let query_error = analyze_query_errors(&data_with_query.query);
+    if let Some(error_found) = query_error {
+        return error_found;
     }
     let graphql_response = {
         let mysql_pool = pool.get().map_err(|e| serde_json::Error::custom(e))?;
