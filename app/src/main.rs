@@ -11,14 +11,15 @@ extern crate validator;
 
 use crate::serde::ser::Error as SerdeError;
 use actix_cors::Cors;
-use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, error};
 use listenfd::ListenFd;
 use std::sync::Arc;
+use futures::StreamExt;
 
 use dotenv::dotenv;
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::playground::playground_source;
-use juniper::http::GraphQLRequest;
+use juniper::http::{GraphQLRequest, GraphQLResponse};
 
 mod db;
 mod errors;
@@ -33,6 +34,11 @@ use crate::graphql::{create_context, create_schema, Schema};
 use crate::handlers::LoggedUser;
 //use std::fmt::format;
 use std::env;
+use actix_web::web::BytesMut;
+use std::fmt::Debug;
+use graphql_depth_limit::{ValidateQueryDepth, DepthLimitError};
+use juniper::{IntoFieldError};
+use crate::errors::ServiceError;
 
 const SERVER_URL: &str = "http://172.17.0.3:80";
 
@@ -55,13 +61,46 @@ struct DataWithQuery {
     query: String
 }
 
+const MAX_SIZE: usize = 262_144;
+
+async fn get_data(mut payload: web::Payload) -> Result<BytesMut, Error> {
+    let mut body = BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk?;
+        // limit max size of in-memory payload
+        if (body.len() + chunk.len()) > MAX_SIZE {
+            return Err(error::ErrorBadRequest("overflow"));
+        }
+        body.extend_from_slice(&chunk);
+    };
+    Ok(body)
+}
+
 async fn graphql(
     st: web::Data<Arc<Schema>>,
-    data: web::Json<GraphQLRequest>,
     user: LoggedUser,
-    pool: web::Data<MysqlPool>
+    pool: web::Data<MysqlPool>,
+    payload: web::Payload,
 ) -> Result<HttpResponse, Error> {
-//    println!("{}", data_with_query.query);
+    // payload is a stream of Bytes objects
+    let body = get_data(payload).await?;
+    let data = serde_json::from_slice::<GraphQLRequest>(&body)?;
+    let data_with_query = serde_json::from_slice::<DataWithQuery>(&body)?;
+    let validator_depth_limit = ValidateQueryDepth::new(&data_with_query.query, vec![], |_a, _b| true);
+    if let Ok(validator_depth_limit) = validator_depth_limit {
+        match validator_depth_limit.verify(7) {
+            Ok(_depth) => {},
+            Err(err) => {
+                if let DepthLimitError::Exceed(exceed_err) = err {
+                    let res = GraphQLResponse::error(ServiceError::MaxDepthLimit(exceed_err).into_field_error());
+                    let graphql_response = serde_json::to_string(&res)?;
+                    return Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(graphql_response))
+                }
+            }
+        };
+    }
     let graphql_response = {
         let mysql_pool = pool.get().map_err(|e| serde_json::Error::custom(e))?;
         let ctx = create_context(user.email, mysql_pool);
