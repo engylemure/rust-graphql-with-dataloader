@@ -3,7 +3,6 @@ const knex = require('../knex/client')
 
 module.exports.getUsers = ids => {
   const query = knex('users').select('users.*')
-  let rows = []
   if (ids) {
     query.whereIn('id', ids)
     return query.then(rows => {
@@ -81,21 +80,21 @@ module.exports.getCharacters = ids => {
 
 const rowIntoUser = ({ created_at, updated_at, ...row }) => ({
   ...row,
-  createdAt: created_at,
-  updatedAt: updated_at
+  createdAt: created_at.toISOString(),
+  updatedAt: updated_at.toISOString()
 })
 
 const rowIntoMovie = ({ created_at, updated_at, released_at, ...row }) => ({
   ...row,
-  createdAt: created_at,
-  updatedAt: updated_at,
-  releasedAt: released_at
+  createdAt: created_at.toISOString(),
+  updatedAt: updated_at.toISOString(),
+  releasedAt: released_at.toISOString()
 })
 
 const rowIntoCharacter = ({ created_at, updated_at, ...row }) => ({
   ...row,
-  createdAt: created_at,
-  updatedAt: updated_at
+  createdAt: created_at.toISOString(),
+  updatedAt: updated_at.toISOString()
 })
 
 const rowsTObjectById = rows => rows.reduce((acc, row) => {

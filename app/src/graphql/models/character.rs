@@ -5,6 +5,7 @@ use chrono::*;
 
 use crate::models::character::Character;
 use crate::models::movie::Movie;
+use juniper::FieldError;
 
 #[juniper::graphql_object(description = "A Character Movie", name = "Character", Context = Context)]
 impl Character {
@@ -19,14 +20,14 @@ impl Character {
     fn deleted(&self) -> bool {
         self.deleted
     }
-    async fn movies(&self, context: &Context) -> Option<Vec<Movie>> {
+    async fn movies(&self, context: &Context) -> Result<Vec<Movie>, FieldError> {
         let movie_ids = context.movie_ids_data_loader_by_character_id.load(self.id).await;
         match movie_ids {
             Ok(movie_ids) => match context.movie_data_loader_by_id.load_many(movie_ids).await {
-                Ok(movies_result) => Some(movies_result.into_iter().flatten().collect()),
-                Err(_) => None
+                Ok(movies_result) => Ok(movies_result.into_iter().flatten().collect()),
+                Err(_) => Ok(Vec::new())
             },
-            Err(_) => None
+            Err(_) => Ok(Vec::new())
         }
     }
 }

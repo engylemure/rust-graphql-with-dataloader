@@ -39,18 +39,31 @@ use std::fmt::Debug;
 use graphql_depth_limit::{QueryDepthAnalyzer};
 use juniper::IntoFieldError;
 use crate::errors::ServiceError;
+use actix_web::http::header::{HOST};
+use actix_web::http::HeaderValue;
 
-const SERVER_URL: &str = "http://0.0.0.0:80";
+fn server_url(req: &HttpRequest) -> String {
+    match req.headers().get(HOST) {
+        Some(value) => match value.to_str() {
+            Ok(value) => format!("http://{}", value),
+            Err(_) => String::from("http://0.0.0.0:80")
+        },
+        None => String::from("http://0.0.0.0:80")
+    }
+}
 
 pub async fn graphql_interface(_req: HttpRequest) -> Result<HttpResponse, Error> {
-    let html = graphiql_source(format!("{}/graphql", SERVER_URL).as_str());
+    let server_url = server_url(&_req);
+    let html = graphiql_source(format!("{}/graphql", server_url).as_str());
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(html))
 }
 
 pub async fn graphql_playground(_req: HttpRequest) -> Result<HttpResponse, Error> {
-    let html = playground_source(format!("{}/graphql", SERVER_URL).as_str());
+    let server_url = server_url(&_req);
+    println!("{}", server_url);
+    let html = playground_source(format!("{}/graphql", server_url).as_str());
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(html))
@@ -79,7 +92,7 @@ async fn get_data(mut payload: web::Payload) -> Result<BytesMut, Error> {
 fn analyze_query_errors(query: &str) -> Option<Result<HttpResponse, Error>> {
     let depth_limit_analyzer = QueryDepthAnalyzer::new(query, vec![], |_a, _b| true);
     if let Ok(depth_limit_analyzer) = depth_limit_analyzer {
-        match depth_limit_analyzer.verify(7) {
+        match depth_limit_analyzer.verify(15) {
             Ok(_depth) => {}
             Err(err) => {
                 let res = GraphQLResponse::error(ServiceError::MaxDepthLimit(err).into_field_error());

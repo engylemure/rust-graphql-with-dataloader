@@ -98,7 +98,7 @@ const resolvers = {
     Character: {
         movies: async (parent, args, context, info) => {
             const movieIds = await context.loaders.movieIdsByCharacterId.load(parent.id)
-            return context.loaders.movieById.loadMany(movieIds ? movieIds : [])
+            return context.loaders.movieById.loadMany(movieIds ? movieIds : []);
         }
     }
 }
