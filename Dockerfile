@@ -30,4 +30,4 @@ RUN cargo install systemfd cargo-watch
 
 ENTRYPOINT ["dockerize", "-template", "/env.tmpl:/usr/src/app/.env"]
 
-CMD ["sh", "/start.sh"]
+CMD ["bash", "/start.sh"]
