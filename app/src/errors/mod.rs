@@ -73,7 +73,6 @@ impl juniper::IntoFieldError for ServiceError {
                 "Unknown Error",
                 graphql_value!({
                     "type": "UNKNOWN_ERROR",
-
                 }),
             ),
         }

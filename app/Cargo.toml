@@ -34,5 +34,4 @@ dataloader = "0.6.0"
 futures = "0.3"
 juniper_codegen = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = ["async"] }
 juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = ["async"] }
-graphql_depth_limit = { git = "https://github.com/engylemure/graphql_depth_limit", branch = "master" }
-graphql-parser = "0.2.3"
+graphql_depth_limit = "0.1.1"

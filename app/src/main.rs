@@ -36,11 +36,11 @@ use crate::handlers::LoggedUser;
 use std::env;
 use actix_web::web::BytesMut;
 use std::fmt::Debug;
-use graphql_depth_limit::{QueryDepthAnalyzer, DepthLimitError};
+use graphql_depth_limit::{QueryDepthAnalyzer};
 use juniper::IntoFieldError;
 use crate::errors::ServiceError;
 
-const SERVER_URL: &str = "http://172.17.0.3:80";
+const SERVER_URL: &str = "http://0.0.0.0:80";
 
 pub async fn graphql_interface(_req: HttpRequest) -> Result<HttpResponse, Error> {
     let html = graphiql_source(format!("{}/graphql", SERVER_URL).as_str());
@@ -82,14 +82,12 @@ fn analyze_query_errors(query: &str) -> Option<Result<HttpResponse, Error>> {
         match depth_limit_analyzer.verify(7) {
             Ok(_depth) => {}
             Err(err) => {
-                if let DepthLimitError::Exceed(exceed_err) = err {
-                    let res = GraphQLResponse::error(ServiceError::MaxDepthLimit(exceed_err).into_field_error());
-                    let graphql_response = serde_json::to_string(&res);
-                    if let Ok(graphql_response) = graphql_response {
-                        return Some(Ok(HttpResponse::Ok()
-                            .content_type("application/json")
-                            .body(graphql_response)))
-                    }
+                let res = GraphQLResponse::error(ServiceError::MaxDepthLimit(err).into_field_error());
+                let graphql_response = serde_json::to_string(&res);
+                if let Ok(graphql_response) = graphql_response {
+                    return Some(Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(graphql_response)))
                 }
             }
         };
