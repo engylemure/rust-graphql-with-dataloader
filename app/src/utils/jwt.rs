@@ -2,7 +2,7 @@ use crate::models::user::SlimUser;
 use actix_web::HttpResponse;
 use chrono::{Duration, Local};
 use dotenv::dotenv;
-use jsonwebtoken::{decode, encode, Header, Validation, Algorithm, EncodingKey, DecodingKey};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use std::convert::From;
 use std::env;
 use uuid::Uuid;
@@ -42,7 +42,7 @@ impl From<Claims> for SlimUser {
     fn from(claims: Claims) -> Self {
         SlimUser {
             email: Some(claims.email),
-            uuid: Some(claims.uuid)
+            uuid: Some(claims.uuid),
         }
     }
 }
@@ -51,14 +51,22 @@ pub fn create_token(email: &str, uuid: Uuid) -> Result<String, HttpResponse> {
     let claims = Claims::with_email(email, uuid);
     let mut header = Header::default();
     header.alg = Algorithm::HS512;
-    encode(&header, &claims, &EncodingKey::from_secret(get_secret().as_ref()))
-        .map_err(|e| HttpResponse::InternalServerError().json(e.to_string()))
+    encode(
+        &header,
+        &claims,
+        &EncodingKey::from_secret(get_secret().as_ref()),
+    )
+    .map_err(|e| HttpResponse::InternalServerError().json(e.to_string()))
 }
 
 pub fn decode_token(token: &str) -> Result<SlimUser, HttpResponse> {
-    decode::<Claims>(token, &DecodingKey::from_secret(get_secret().as_ref()), &Validation::new(Algorithm::HS512))
-        .map(|data| data.claims.into())
-        .map_err(|e| HttpResponse::Unauthorized().json(e.to_string()))
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(get_secret().as_ref()),
+        &Validation::new(Algorithm::HS512),
+    )
+    .map(|data| data.claims.into())
+    .map_err(|e| HttpResponse::Unauthorized().json(e.to_string()))
 }
 
 // take a string from env variable

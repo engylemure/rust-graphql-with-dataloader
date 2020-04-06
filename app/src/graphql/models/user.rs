@@ -1,17 +1,19 @@
 extern crate dotenv;
 
-use crate::graphql::Context;
 use crate::graphql::utils::generate_uuid_from_str;
+use crate::graphql::Context;
+use crate::models::user::User;
 use chrono::*;
 use uuid::Uuid;
-use crate::models::user::User;
 
 #[juniper::graphql_object(description = "A user", name = "User", Context = Context)]
 impl User {
     fn id(&self) -> i32 {
         self.id
     }
-    fn uuid(&self) -> Option<Uuid> { generate_uuid_from_str(self.uuid.as_str()) }
+    fn uuid(&self) -> Option<Uuid> {
+        generate_uuid_from_str(self.uuid.as_str())
+    }
     fn email(&self) -> String {
         self.email.to_string()
     }

@@ -15,4 +15,3 @@ pub struct Movie {
     pub updated_at: NaiveDateTime,
     pub deleted: bool,
 }
-

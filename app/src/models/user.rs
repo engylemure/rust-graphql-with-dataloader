@@ -1,14 +1,14 @@
 extern crate dotenv;
 
 //use diesel::prelude::*;
+use crate::graphql::utils::generate_uuid_from_str;
 use crate::schema::users;
 use crate::utils::identity::{make_hash, make_salt};
 use chrono::*;
-use uuid::Uuid;
-use crate::graphql::utils::generate_uuid_from_str;
-use diesel::MysqlConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
+use diesel::MysqlConnection;
+use uuid::Uuid;
 
 #[derive(Queryable, Clone)]
 pub struct User {
@@ -27,7 +27,8 @@ impl User {
         use crate::schema::users::dsl::*;
         users
             .filter(email.eq(email_to_search))
-            .first::<User>(conn).ok()
+            .first::<User>(conn)
+            .ok()
     }
 }
 
@@ -65,12 +66,10 @@ impl<'a> NewUser<'a> {
 
     pub fn save(&self, conn: &MysqlConnection) -> Result<User, Error> {
         use crate::schema::users::dsl::*;
-        let result = diesel::insert_into(users)
-            .values(self)
-            .execute(conn);
+        let result = diesel::insert_into(users).values(self).execute(conn);
         match result {
             Ok(_) => users.order(id.desc()).first::<User>(conn),
-            Err(error) => Err(error)
+            Err(error) => Err(error),
         }
     }
 }
@@ -78,15 +77,15 @@ impl<'a> NewUser<'a> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SlimUser {
     pub email: Option<String>,
-    pub uuid: Option<Uuid>
+    pub uuid: Option<Uuid>,
 }
 
 impl Default for SlimUser {
     fn default() -> Self {
-       Self {
-           email: None,
-           uuid: None
-       }
+        Self {
+            email: None,
+            uuid: None,
+        }
     }
 }
 
@@ -94,7 +93,7 @@ impl From<User> for SlimUser {
     fn from(user: User) -> Self {
         SlimUser {
             email: Some(user.email),
-            uuid: generate_uuid_from_str(user.uuid.as_str())
+            uuid: generate_uuid_from_str(user.uuid.as_str()),
         }
     }
 }

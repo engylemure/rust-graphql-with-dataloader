@@ -1,8 +1,8 @@
 extern crate dotenv;
-use crate::errors::{ServiceError};
-use crate::graphql::{Context};
-use diesel::prelude::*;
+use crate::errors::ServiceError;
+use crate::graphql::Context;
 use crate::models::character::Character;
+use diesel::prelude::*;
 
 pub fn characters(context: &Context) -> Result<Vec<Character>, ServiceError> {
     use crate::schema::characters::dsl::*;

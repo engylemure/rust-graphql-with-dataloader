@@ -1,3 +1,3 @@
-pub mod user;
-pub mod movie;
 pub mod character;
+pub mod movie;
+pub mod user;

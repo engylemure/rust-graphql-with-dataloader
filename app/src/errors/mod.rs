@@ -1,9 +1,9 @@
 use derive_more::Display;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
+use graphql_depth_limit::ExceedMaxDepth;
 use juniper::graphql_value;
 use std::convert::From;
 use validator::ValidationErrors;
-use graphql_depth_limit::{ExceedMaxDepth};
 
 #[derive(Debug)]
 pub struct DuplicateErrorInfo {
@@ -11,6 +11,7 @@ pub struct DuplicateErrorInfo {
     pub info: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Display)]
 pub enum ServiceError {
     #[display(fmt = "Internal Server Error")]
@@ -56,19 +57,19 @@ impl juniper::IntoFieldError for ServiceError {
             ServiceError::ValidationError(_err) => juniper::FieldError::new(
                 "Validation Error",
                 graphql_value!({
-                        "type": "VALIDATION_ERROR"
-                    }),
+                    "type": "VALIDATION_ERROR"
+                }),
             ),
             ServiceError::MaxDepthLimit(err) => {
                 let message = format!("{}", err);
                 juniper::FieldError::new(
                     "Max Depth Limit",
                     graphql_value!({
-                    "type": "MAX_DEPTH_LIMIT",
-                     "message": message
-                }),
+                        "type": "MAX_DEPTH_LIMIT",
+                         "message": message
+                    }),
                 )
-            },
+            }
             _ => juniper::FieldError::new(
                 "Unknown Error",
                 graphql_value!({

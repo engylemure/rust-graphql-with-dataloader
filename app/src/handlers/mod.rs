@@ -1,6 +1,6 @@
 use crate::models::user::SlimUser;
 use crate::utils::jwt::decode_token;
-use actix_web::{ http::header, dev, Error, FromRequest, HttpRequest};
+use actix_web::{dev, http::header, Error, FromRequest, HttpRequest};
 use futures::future::{ok, Ready};
 pub type LoggedUser = SlimUser;
 
@@ -14,12 +14,12 @@ impl FromRequest for LoggedUser {
         let token = match auth {
             Some(header_value) => match header_value.to_str() {
                 Ok(value) => Some(value.replace("Bearer", "").trim().to_string()),
-                Err(_) => None
+                Err(_) => None,
             },
-            None => None
+            None => None,
         };
         match token {
-            None => return ok(LoggedUser::default() ),
+            None => return ok(LoggedUser::default()),
             Some(token) => match decode_token(&token) {
                 Ok(decoded) => return ok(decoded as LoggedUser),
                 Err(_) => return ok(LoggedUser::default()),

@@ -29,9 +29,9 @@ derive_more = "0.15.0"
 listenfd = "0.3"
 validator = "0.10"
 validator_derive = "0.10"
-# The Future is NOW!!!!!
 dataloader = "0.6.0"
 futures = "0.3"
-juniper_codegen = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = ["async"] }
-juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = ["async"] }
+juniper_codegen = { git = "https://github.com/engylemure/juniper", branch = "juniper_actix_subscriptions" }
+juniper = { git = "https://github.com/engylemure/juniper", branch = "juniper_actix_subscriptions" }
+juniper_actix = { git = "https://github.com/engylemure/juniper", branch = "juniper_actix_subscriptions", features = ["subscriptions"] }
 graphql_depth_limit = "0.1.1"

@@ -1,9 +1,9 @@
 extern crate dotenv;
-use crate::errors::{ServiceError};
-use crate::graphql::{Context};
-use diesel::prelude::*;
-use crate::models::movie::Movie;
+use crate::errors::ServiceError;
 use crate::graphql::input::movie::MovieFilter;
+use crate::graphql::Context;
+use crate::models::movie::Movie;
+use diesel::prelude::*;
 
 pub fn movies(context: &Context, filter: Option<MovieFilter>) -> Result<Vec<Movie>, ServiceError> {
     use crate::schema::movies::dsl::*;
