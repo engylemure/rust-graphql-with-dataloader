@@ -8,6 +8,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate validator_derive;
 extern crate validator;
+#[macro_use]
+extern crate lazy_static;
 
 use crate::serde::ser::Error as SerdeError;
 use actix_cors::Cors;
@@ -15,11 +17,8 @@ use actix_web::{error, middleware, web, App, Error, HttpRequest, HttpResponse, H
 use futures::StreamExt;
 use listenfd::ListenFd;
 
-use dotenv::dotenv;
-use juniper::http::{GraphQLBatchRequest, GraphQLResponse, GraphQLRequest};
-use juniper_actix::{
-    get_graphql_handler, graphiql_handler, playground_handler, post_graphql_handler,
-};
+use juniper::http::{GraphQLResponse};
+use juniper_actix::{graphiql_handler, playground_handler, graphql_handler};
 
 mod db;
 mod errors;
@@ -34,14 +33,14 @@ use crate::graphql::{create_context, create_schema, Schema};
 use crate::handlers::LoggedUser;
 //use std::fmt::format;
 use crate::errors::ServiceError;
+use crate::utils::env::ENV;
 use actix_web::web::BytesMut;
 use graphql_depth_limit::QueryDepthAnalyzer;
 use juniper::IntoFieldError;
-use std::env;
 use std::fmt::Debug;
 
 pub async fn graphql_interface(_req: HttpRequest) -> Result<HttpResponse, Error> {
-    graphiql_handler("/").await
+    graphiql_handler("/", None).await
 }
 
 pub async fn graphql_playground(_req: HttpRequest) -> Result<HttpResponse, Error> {
@@ -78,14 +77,14 @@ async fn get_data(mut payload: web::Payload) -> Result<BytesMut, Error> {
 fn analyze_query_errors(query: &str) -> Option<Result<HttpResponse, Error>> {
     let depth_limit_analyzer = QueryDepthAnalyzer::new(query, vec![], |_a, _b| true);
     if let Ok(depth_limit_analyzer) = depth_limit_analyzer {
-        match depth_limit_analyzer.verify(15) {
+        match depth_limit_analyzer.verify(4) {
             Ok(_depth) => {}
             Err(err) => {
                 let res =
                     GraphQLResponse::error(ServiceError::MaxDepthLimit(err).into_field_error());
                 let graphql_response = serde_json::to_string(&res);
                 if let Ok(graphql_response) = graphql_response {
-                    return Some(Ok(HttpResponse::Ok()
+                    return Some(Ok(HttpResponse::BadRequest()
                         .content_type("application/json")
                         .body(graphql_response)));
                 }
@@ -117,46 +116,27 @@ async fn graphql(
     user: LoggedUser,
     pool: web::Data<MysqlPool>,
     payload: web::Payload,
+    req: HttpRequest
 ) -> Result<HttpResponse, Error> {
     // payload is a stream of Bytes objects
     let body = get_data(payload).await?;
-    let data = serde_json::from_slice::<GraphQLBatchRequest>(&body)?;
     let data_with_query = serde_json::from_slice::<BatchDataWithQuery>(&body)?;
     if let Some(result) = analyze_batch_query_errors(data_with_query) {
         return result;
     }
     let mysql_pool = pool.get().map_err(|e| serde_json::Error::custom(e))?;
     let ctx = create_context(user.email, mysql_pool);
-    post_graphql_handler(&st, &ctx, web::Json(data)).await
-}
-
-async fn graphql_get(
-    st: web::Data<Schema>,
-    user: LoggedUser,
-    pool: web::Data<MysqlPool>,
-    req: web::Query<GraphQLRequest>,
-    data_with_query: web::Query<DataWithQuery>,
-) -> Result<HttpResponse, Error> {
-    if let Some(result) = analyze_query_errors(&data_with_query.query) {
-        return result;
-    }
-    let mysql_pool = pool.get().map_err(|e| serde_json::Error::custom(e))?;
-    let ctx = create_context(user.email, mysql_pool);
-    get_graphql_handler(&st, &ctx, req).await
+    let gql_payload = web::Payload(actix_web::dev::Payload::Stream(Box::pin(tokio::stream::once(Ok(body.freeze())))));
+    graphql_handler(&st, &ctx, req, gql_payload).await
 }
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().ok();
     println!("Starting server");
     ::std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
     //    let sys = actix::System::new("selloclub");
     let mut listenfd = ListenFd::from_env();
-    let port: i16 = env::var("SERVER_PORT")
-        .unwrap_or_else(|_| String::from("80"))
-        .parse()
-        .expect("SERVER_PORT must be a number");
     let mut server = HttpServer::new(move || {
         App::new()
             .data(establish_connection())
@@ -174,7 +154,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::resource("/")
                     .route(web::post().to(graphql))
-                    .route(web::get().to(graphql_get)),
+                    .route(web::get().to(graphql)),
             )
             .service(web::resource("/graphiql").route(web::get().to(graphql_interface)))
             .service(web::resource("/playground").route(web::get().to(graphql_playground)))
@@ -183,9 +163,9 @@ async fn main() -> std::io::Result<()> {
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
         server.listen(l).unwrap()
     } else {
-        server.bind(format!("0.0.0.0:{}", port)).unwrap()
+        server.bind(format!("0.0.0.0:{}", ENV.server_port)).unwrap()
     };
 
-    println!("Started http server: 0.0.0.0:{}", port);
+    println!("Started http server: 0.0.0.0:{}", ENV.server_port);
     server.run().await
 }

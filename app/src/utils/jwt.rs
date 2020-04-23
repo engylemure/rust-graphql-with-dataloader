@@ -1,10 +1,9 @@
 use crate::models::user::SlimUser;
+use crate::utils::env::ENV;
 use actix_web::HttpResponse;
 use chrono::{Duration, Local};
-use dotenv::dotenv;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use std::convert::From;
-use std::env;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,9 +25,8 @@ struct Claims {
 // struct to get converted to token and back
 impl Claims {
     fn with_email(email: &str, uuid: Uuid) -> Self {
-        dotenv().ok();
         Claims {
-            iss: env::var("DOMAIN").unwrap_or("localhost".into()),
+            iss: ENV.domain.clone(),
             sub: "auth".into(),
             uuid: uuid.to_owned(),
             email: email.to_owned(),
@@ -54,7 +52,7 @@ pub fn create_token(email: &str, uuid: Uuid) -> Result<String, HttpResponse> {
     encode(
         &header,
         &claims,
-        &EncodingKey::from_secret(get_secret().as_ref()),
+        &EncodingKey::from_secret(ENV.jwt_private_key.as_ref()),
     )
     .map_err(|e| HttpResponse::InternalServerError().json(e.to_string()))
 }
@@ -62,15 +60,9 @@ pub fn create_token(email: &str, uuid: Uuid) -> Result<String, HttpResponse> {
 pub fn decode_token(token: &str) -> Result<SlimUser, HttpResponse> {
     decode::<Claims>(
         token,
-        &DecodingKey::from_secret(get_secret().as_ref()),
+        &DecodingKey::from_secret(ENV.jwt_private_key.as_ref()),
         &Validation::new(Algorithm::HS512),
     )
     .map(|data| data.claims.into())
     .map_err(|e| HttpResponse::Unauthorized().json(e.to_string()))
-}
-
-// take a string from env variable
-fn get_secret() -> String {
-    dotenv().ok();
-    env::var("JWT_PRIVATE_KEY").unwrap_or("my secret".into())
 }
